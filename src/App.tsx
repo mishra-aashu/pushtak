@@ -7,7 +7,7 @@ import CommandPaletteDemo from './components/CommandPaletteDemo';
 import Pricing from './components/Pricing';
 import Portal from './components/Portal';
 import Footer from './components/Footer';
-import { X, LogIn, ExternalLink, ShieldCheck } from 'lucide-react';
+import { X, LogIn, ShieldCheck } from 'lucide-react';
 
 export default function App() {
   const [view, setView] = useState<'home' | 'portal'>('home');
@@ -23,6 +23,14 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('pustak-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    // Session state check to ensure proper state usage
+    const sessionActive = isLoggedIn;
+    if (sessionActive) {
+      console.debug('Admin session activated.');
+    }
+  }, [isLoggedIn]);
 
   
   // Registration / license key info
