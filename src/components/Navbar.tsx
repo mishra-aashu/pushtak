@@ -4,14 +4,11 @@ import { Menu, X, Github, ExternalLink, Sun, Moon } from 'lucide-react';
 interface NavbarProps {
   currentView: 'home' | 'portal';
   setView: (view: 'home' | 'portal') => void;
-  isLoggedIn: boolean;
-  onLoginClick: () => void;
-  onLogoutClick: () => void;
   theme: 'light' | 'dark';
   toggleTheme: () => void;
 }
 
-export default function Navbar({ currentView, setView, isLoggedIn, onLoginClick, onLogoutClick, theme, toggleTheme }: NavbarProps) {
+export default function Navbar({ currentView, setView, theme, toggleTheme }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleNavClick = (sectionId: string) => {

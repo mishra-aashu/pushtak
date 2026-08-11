@@ -80,9 +80,6 @@ export default function App() {
       <Navbar 
         currentView={view} 
         setView={setView} 
-        isLoggedIn={isLoggedIn}
-        onLoginClick={() => setShowLoginModal(true)}
-        onLogoutClick={handleLogout}
         theme={theme}
         toggleTheme={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
       />
