@@ -154,7 +154,7 @@ export default function Pricing({ onSuccessPurchase }: PricingProps) {
           {/* Starter Demo Card */}
           <div className="glass-card pricing-card">
             <div className="price-header">
-              <h3 className="price-title">Starter Demo</h3>
+              <h3 className="price-title" style={{ fontWeight: 700 }}>Starter Demo</h3>
               <p>Test Pustak OS on your local PC</p>
               <div className="price-tag">
                 <span className="price-currency">₹</span>
@@ -175,14 +175,14 @@ export default function Pricing({ onSuccessPurchase }: PricingProps) {
               <li className="pricing-feature-item">
                 <Check size={16} /> Command Palette Quick Search
               </li>
-              <li className="pricing-feature-item" style={{ color: 'var(--text-dark)' }}>
-                <X size={16} style={{ color: 'red' }} /> Multi-Shift Desk Allocation
+              <li className="pricing-feature-item muted">
+                <X size={16} /> Multi-Shift Desk Allocation
               </li>
-              <li className="pricing-feature-item" style={{ color: 'var(--text-dark)' }}>
-                <X size={16} style={{ color: 'red' }} /> HWID Single Machine License
+              <li className="pricing-feature-item muted">
+                <X size={16} /> HWID Single Machine License
               </li>
-              <li className="pricing-feature-item" style={{ color: 'var(--text-dark)' }}>
-                <X size={16} style={{ color: 'red' }} /> 1-Click Automated Backup
+              <li className="pricing-feature-item muted">
+                <X size={16} /> 1-Click Automated Backup
               </li>
             </ul>
             <button className="btn btn-secondary" style={{ marginTop: 'auto' }} onClick={() => { setCheckoutPlan('trial'); setPurchaseStep('form'); }}>
@@ -194,11 +194,11 @@ export default function Pricing({ onSuccessPurchase }: PricingProps) {
           <div className="glass-card pricing-card featured">
             <div className="pricing-badge">BEST VALUE</div>
             <div className="price-header">
-              <h3 className="price-title" style={{ color: '#a78bfa' }}>Lifetime Pro</h3>
+              <h3 className="price-title" style={{ color: 'var(--primary)', fontWeight: 700 }}>Lifetime Pro</h3>
               <p>Own the software. Run 100% offline forever.</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
                 <span style={{ color: 'var(--text-dark)', textDecoration: 'line-through', fontSize: '0.85rem' }}>₹8,499</span>
-                <span className="badge" style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', background: 'rgba(139, 92, 246, 0.1)', border: '1px solid rgba(139, 92, 246, 0.3)', color: '#a78bfa', textTransform: 'none', borderRadius: '4px', verticalAlign: 'middle', fontWeight: 600 }}>Save 29%</span>
+                <span className="badge" style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', background: 'var(--accent-light)', border: '1px solid var(--border-hover)', color: 'var(--primary)', textTransform: 'none', borderRadius: '4px', verticalAlign: 'middle', fontWeight: 600 }}>Save 29%</span>
               </div>
               <div className="price-tag" style={{ marginTop: '0.25rem' }}>
                 <span className="price-currency">₹</span>
@@ -238,11 +238,11 @@ export default function Pricing({ onSuccessPurchase }: PricingProps) {
           <div className="glass-card pricing-card">
             <div className="pricing-badge" style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', top: '-15px', right: '25px' }}>RECOMMENDED FOR TEAMS</div>
             <div className="price-header">
-              <h3 className="price-title" style={{ color: '#34d399' }}>Cloud & WhatsApp</h3>
+              <h3 className="price-title" style={{ color: 'var(--success)', fontWeight: 700 }}>Cloud & WhatsApp</h3>
               <p>For owners wanting remote access & automation.</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
                 <span style={{ color: 'var(--text-dark)', textDecoration: 'line-through', fontSize: '0.85rem' }}>₹18,499</span>
-                <span className="badge" style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', background: 'rgba(52, 211, 153, 0.1)', border: '1px solid rgba(52, 211, 153, 0.3)', color: '#34d399', textTransform: 'none', borderRadius: '4px', verticalAlign: 'middle', fontWeight: 600 }}>Save 32%</span>
+                <span className="badge" style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', background: 'var(--success-light)', border: '1px solid var(--success-border)', color: 'var(--success)', textTransform: 'none', borderRadius: '4px', verticalAlign: 'middle', fontWeight: 600 }}>Save 32%</span>
               </div>
               <div className="price-tag" style={{ marginTop: '0.25rem' }}>
                 <span className="price-currency">₹</span>
