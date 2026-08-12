@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Check, X, Sparkles, Copy, CheckCircle2, Chrome } from 'lucide-react';
+import { Check, X, Sparkles, Copy, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface PricingProps {

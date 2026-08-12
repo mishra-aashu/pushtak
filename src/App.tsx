@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Features from './components/Features';
@@ -7,7 +7,7 @@ import CommandPaletteDemo from './components/CommandPaletteDemo';
 import Pricing from './components/Pricing';
 import Portal from './components/Portal';
 import Footer from './components/Footer';
-import { X, LogIn, Chrome } from 'lucide-react';
+import { X, LogIn } from 'lucide-react';
 import { supabase } from './lib/supabase';
 
 export default function App() {

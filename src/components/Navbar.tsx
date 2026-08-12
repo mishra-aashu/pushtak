@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, X, Github, ExternalLink, Sun, Moon, LogIn, LogOut, LayoutDashboard } from 'lucide-react';
+import { Menu, X, Github, ExternalLink, Sun, Moon, LogIn, LogOut } from 'lucide-react';
 
 interface NavbarProps {
   currentView: 'home' | 'portal';
