@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Check, X, Sparkles, Copy, CheckCircle2 } from 'lucide-react';
+import { Check, X, Sparkles, Copy, CheckCircle2, Eye, EyeOff, Lock, Mail, ShieldAlert } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface PricingProps {
@@ -17,6 +17,13 @@ export default function Pricing({ user, onSuccessPurchase }: PricingProps) {
   const [retrieveEmail, setRetrieveEmail] = useState('');
   const [retrievedLicenses, setRetrievedLicenses] = useState<any[] | null>(null);
   const [isRetrieving, setIsRetrieving] = useState(false);
+
+  // Checkout Email Auth states
+  const [checkoutEmail, setCheckoutEmail] = useState('');
+  const [checkoutPassword, setCheckoutPassword] = useState('');
+  const [showCheckoutPassword, setShowCheckoutPassword] = useState(false);
+  const [isCheckoutAuthLoading, setIsCheckoutAuthLoading] = useState(false);
+  const [checkoutAuthError, setCheckoutAuthError] = useState('');
 
   // Restore plan from localStorage if redirecting back from OAuth
   useEffect(() => {
@@ -56,7 +63,30 @@ export default function Pricing({ user, onSuccessPurchase }: PricingProps) {
       alert('Failed to launch Google Sign In: ' + err.message);
     }
   };
-
+  const handleCheckoutEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!checkoutEmail.trim() || !checkoutPassword.trim()) {
+      setCheckoutAuthError('Please enter both email and password.');
+      return;
+    }
+    setIsCheckoutAuthLoading(true);
+    setCheckoutAuthError('');
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: checkoutEmail.trim(),
+        password: checkoutPassword.trim(),
+      });
+      if (error) throw error;
+      
+      setCheckoutEmail('');
+      setCheckoutPassword('');
+    } catch (err: any) {
+      console.error('Checkout email login failed:', err);
+      setCheckoutAuthError(err.message || 'Authentication failed. Please check your credentials.');
+    } finally {
+      setIsCheckoutAuthLoading(false);
+    }
+  };
   const handleCheckoutSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.libraryName) {
@@ -306,50 +336,121 @@ export default function Pricing({ user, onSuccessPurchase }: PricingProps) {
                     {user ? (
                       <p>Enter details for the Pustak OS activation license</p>
                     ) : (
-                      <p>Sign in with Google to secure ownership of your license</p>
+                      <p>Sign in to secure ownership of your license</p>
                     )}
                   </div>
                   
                   {!user ? (
-                    <div style={{ textAlign: 'center', padding: '1rem 0.5rem' }}>
-                      <p style={{ fontSize: '0.9rem', marginBottom: '1.5rem', color: 'var(--text-dark)', lineHeight: '1.5' }}>
-                        Registering a license requires connecting to your Google account so you can securely retrieve and manage your activations from any machine.
+                    <div style={{ padding: '0 0.5rem' }}>
+                      {checkoutAuthError && (
+                        <div className="alert alert-danger" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '1.25rem', padding: '0.75rem', borderRadius: 'var(--border-radius-sm)', background: 'rgba(239, 68, 68, 0.06)', border: '1px solid rgba(239, 68, 68, 0.15)', color: '#ef4444', fontSize: '0.85rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
+                            <ShieldAlert size={16} style={{ flexShrink: 0 }} />
+                            <span>{checkoutAuthError}</span>
+                          </div>
+                          {(checkoutAuthError.toLowerCase().includes('invalid') || checkoutAuthError.toLowerCase().includes('not found')) && (
+                            <div style={{ fontSize: '0.8rem', color: '#ef4444', opacity: 0.85, paddingLeft: '1.4rem' }}>
+                              💡 New user? Use Google below to register.
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <form onSubmit={handleCheckoutEmailAuth} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}>
+                        <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-dark)' }}>Email Address</label>
+                          <div className="input-with-icon-wrapper">
+                            <span className="input-icon">
+                              <Mail size={16} />
+                            </span>
+                            <input
+                              type="email"
+                              required
+                              className="form-input"
+                              placeholder="name@library.com"
+                              value={checkoutEmail}
+                              onChange={(e) => setCheckoutEmail(e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-dark)' }}>Password</label>
+                          <div className="input-with-icon-wrapper">
+                            <span className="input-icon">
+                              <Lock size={16} />
+                            </span>
+                            <input
+                              type={showCheckoutPassword ? 'text' : 'password'}
+                              required
+                              className="form-input"
+                              placeholder="Enter password"
+                              value={checkoutPassword}
+                              onChange={(e) => setCheckoutPassword(e.target.value)}
+                            />
+                            <button
+                              type="button"
+                              className="password-toggle-btn"
+                              onClick={() => setShowCheckoutPassword(!showCheckoutPassword)}
+                              tabIndex={-1}
+                            >
+                              {showCheckoutPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
+                          </div>
+                        </div>
+
+                        <button type="submit" disabled={isCheckoutAuthLoading} className="btn btn-primary w-full" style={{ padding: '0.8rem', fontWeight: 600, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                          {isCheckoutAuthLoading ? 'Processing...' : 'Sign In & Continue'}
+                        </button>
+                      </form>
+
+                      <div style={{ display: 'flex', alignItems: 'center', margin: '1rem 0', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                        <div style={{ flexGrow: 1, height: '1px', background: 'var(--border-color)' }}></div>
+                        <span style={{ padding: '0 0.75rem', fontWeight: 500, letterSpacing: '0.05em' }}>OR</span>
+                        <div style={{ flexGrow: 1, height: '1px', background: 'var(--border-color)' }}></div>
+                      </div>
+
+                      <div style={{ padding: '0 0.5rem', marginBottom: '0.5rem' }}>
+                        <button 
+                          type="button" 
+                          className="btn w-full" 
+                          onClick={() => handleGoogleLoginForCheckout(checkoutPlan!)}
+                          style={{ 
+                            background: '#ffffff', 
+                            color: '#1e293b', 
+                            border: '1px solid #e2e8f0', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            gap: '0.75rem', 
+                            fontWeight: 600,
+                            padding: '0.85rem 1rem',
+                            borderRadius: 'var(--border-radius-sm)',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.2s, border-color 0.2s'
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.backgroundColor = '#f8fafc';
+                            e.currentTarget.style.borderColor = '#cbd5e1';
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.backgroundColor = '#ffffff';
+                            e.currentTarget.style.borderColor = '#e2e8f0';
+                          }}
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22c-.87-2.6-3.41-4.53-6.19-4.53z" fill="#FBBC05" />
+                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
+                          </svg>
+                          <span>Continue with Google</span>
+                        </button>
+                      </div>
+                      
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '1rem', lineHeight: '1.4' }}>
+                        💡 Google login is recommended for quick and instant activation setup.
                       </p>
-                      <button 
-                        type="button" 
-                        className="btn w-full" 
-                        onClick={() => handleGoogleLoginForCheckout(checkoutPlan!)}
-                        style={{ 
-                          background: '#ffffff', 
-                          color: '#1e293b', 
-                          border: '1px solid #e2e8f0', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center', 
-                          gap: '0.75rem', 
-                          fontWeight: 600,
-                          padding: '0.85rem 1rem',
-                          borderRadius: 'var(--border-radius-sm)',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.2s, border-color 0.2s'
-                        }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.backgroundColor = '#f8fafc';
-                          e.currentTarget.style.borderColor = '#cbd5e1';
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.backgroundColor = '#ffffff';
-                          e.currentTarget.style.borderColor = '#e2e8f0';
-                        }}
-                      >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22c-.87-2.6-3.41-4.53-6.19-4.53z" fill="#FBBC05" />
-                          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
-                        </svg>
-                        <span>Continue with Google</span>
-                      </button>
                     </div>
                   ) : (
                     <form className="checkout-form" onSubmit={handleCheckoutSubmit}>
