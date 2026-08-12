@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Armchair, CheckCircle2, Copy, Download, FileText, Info, Key, LayoutDashboard, LogOut, Monitor, Trash2, Loader2 } from 'lucide-react';
+import { Armchair, CheckCircle2, Copy, Download, FileText, Info, Key, LayoutDashboard, LogOut, Monitor, Trash2, Loader2, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface PortalProps {
@@ -27,6 +27,8 @@ export default function Portal({ user, licenseKey, libraryName, onLogout }: Port
   const [activations, setActivations] = useState<Machine[]>([]);
   const [loading, setLoading] = useState(false);
   const [activating, setActivating] = useState(false);
+  const [showLicenseKey, setShowLicenseKey] = useState(false);
+  const [copiedLicense, setCopiedLicense] = useState(false);
 
   // Mock state fallbacks for offline demo bypass (admin/admin)
   const [mockActivations, setMockActivations] = useState<Machine[]>([
@@ -341,8 +343,74 @@ export default function Portal({ user, licenseKey, libraryName, onLogout }: Port
                       <h2>License Dashboard</h2>
                       <p>Manage machines, seats, and updates for your institution.</p>
                     </div>
-                    <div className="badge" style={{ textTransform: 'none' }}>
-                      License: {currentLicense.substring(0, 16)}...
+                    <div 
+                      className="badge" 
+                      style={{ 
+                        textTransform: 'none', 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '0.5rem',
+                        padding: '0.35rem 0.75rem',
+                        background: 'var(--accent-light)',
+                        border: '1px solid rgba(139, 92, 246, 0.2)'
+                      }}
+                    >
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>License:</span>
+                      <code style={{ 
+                        fontFamily: 'monospace', 
+                        letterSpacing: showLicenseKey ? 'normal' : '0.15em', 
+                        color: 'var(--primary)',
+                        fontWeight: 'bold',
+                        fontSize: '0.85rem'
+                      }}>
+                        {showLicenseKey 
+                          ? currentLicense 
+                          : `${currentLicense.substring(0, 13)}••••-••••`}
+                      </code>
+                      
+                      <button
+                        onClick={() => setShowLicenseKey(!showLicenseKey)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-muted)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          padding: '2px',
+                          borderRadius: '4px',
+                          transition: 'color 0.2s'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.color = 'var(--primary)'}
+                        onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+                        title={showLicenseKey ? "Hide License Key" : "Show License Key"}
+                      >
+                        {showLicenseKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(currentLicense);
+                          setCopiedLicense(true);
+                          setTimeout(() => setCopiedLicense(false), 2000);
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-muted)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          padding: '2px',
+                          borderRadius: '4px',
+                          transition: 'color 0.2s'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.color = 'var(--primary)'}
+                        onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+                        title="Copy License Key"
+                      >
+                        {copiedLicense ? <span style={{ fontSize: '0.75rem', color: 'var(--success)', fontWeight: 'bold' }}>Copied!</span> : <Copy size={14} />}
+                      </button>
                     </div>
                   </div>
 
@@ -553,17 +621,21 @@ export default function Portal({ user, licenseKey, libraryName, onLogout }: Port
                     {/* Linux Card */}
                     <div className="download-release-card">
                       <div className="release-info">
-                        <div className="release-icon-circle">🐧</div>
+                        <div className="release-icon-circle" style={{ background: '#fef3c7', color: '#d97706' }}>
+                          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                            <path d="M12 2A4 4 0 0 0 8 6c0 1.66.86 3.12 2.15 3.96C8.25 10.74 7 12.72 7 15c0 2.21 1.79 4 4 4h2c2.21 0 4-1.79 4-4 0-2.28-1.25-4.26-3.15-5.04C15.14 9.12 16 7.66 16 6a4 4 0 0 0-4-4zm0 2a2 2 0 0 1 2 2 2 2 0 0 1-2 2 2 2 0 0 1-2-2 2 2 0 0 1 2-2zm-1 8h2v2h-2v-2z" />
+                          </svg>
+                        </div>
                         <div>
                           <div className="release-version">Pustak OS v2.0.0 (Linux Build)</div>
                           <div className="release-date">Released: August 11, 2026 &bull; Stable Build</div>
                         </div>
                       </div>
                       <div className="release-actions">
-                        <a href="https://github.com/mishra-aashu/pushtak/releases" target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+                        <a href="https://github.com/mishra-aashu/pushtak/releases" target="_blank" rel="noopener noreferrer" className="btn btn-primary w-full">
                           <Download size={14} /> Download .deb
                         </a>
-                        <a href="https://github.com/mishra-aashu/pushtak/releases" target="_blank" rel="noopener noreferrer" className="btn btn-secondary">
+                        <a href="https://github.com/mishra-aashu/pushtak/releases" target="_blank" rel="noopener noreferrer" className="btn btn-secondary w-full">
                           Download .AppImage
                         </a>
                       </div>
@@ -572,14 +644,18 @@ export default function Portal({ user, licenseKey, libraryName, onLogout }: Port
                     {/* Windows Card */}
                     <div className="download-release-card">
                       <div className="release-info">
-                        <div className="release-icon-circle">🪟</div>
+                        <div className="release-icon-circle" style={{ background: '#e0f2fe', color: '#0284c7' }}>
+                          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                            <path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.1zM10.95 1.95L24 0v11.55H10.95V1.95zM10.95 12.45H24v11.55l-13.05-1.95v-9.6z"/>
+                          </svg>
+                        </div>
                         <div>
                           <div className="release-version">Pustak OS v2.0.0 (Windows Build)</div>
                           <div className="release-date">Released: August 11, 2026 &bull; Stable Build</div>
                         </div>
                       </div>
                       <div className="release-actions">
-                        <a href="https://github.com/mishra-aashu/pushtak/releases" target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+                        <a href="https://github.com/mishra-aashu/pushtak/releases" target="_blank" rel="noopener noreferrer" className="btn btn-primary w-full">
                           <Download size={14} /> Download .msi Installer
                         </a>
                       </div>
@@ -588,14 +664,18 @@ export default function Portal({ user, licenseKey, libraryName, onLogout }: Port
                     {/* macOS Card */}
                     <div className="download-release-card">
                       <div className="release-info">
-                        <div className="release-icon-circle">🍎</div>
+                        <div className="release-icon-circle" style={{ background: '#f3f4f6', color: '#1f2937' }}>
+                          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.17.67-2.88 1.49-.62.72-1.16 1.87-1.01 2.97 1.12.09 2.24-.59 2.9-1.4"/>
+                          </svg>
+                        </div>
                         <div>
                           <div className="release-version">Pustak OS v2.0.0 (macOS Intel/Silicon)</div>
                           <div className="release-date">Released: August 11, 2026 &bull; Apple Silicon Support</div>
                         </div>
                       </div>
                       <div className="release-actions">
-                        <a href="https://github.com/mishra-aashu/pushtak/releases" target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+                        <a href="https://github.com/mishra-aashu/pushtak/releases" target="_blank" rel="noopener noreferrer" className="btn btn-primary w-full">
                           <Download size={14} /> Download DMG (Universal)
                         </a>
                       </div>

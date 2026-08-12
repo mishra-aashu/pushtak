@@ -1342,8 +1342,8 @@ kbd {
 
 /* Downloads table/list */
 .download-releases-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
   margin-top: 2rem;
 }
@@ -1352,13 +1352,27 @@ kbd {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
-  padding: 1.5rem;
+  padding: 1.75rem;
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
+  align-items: stretch;
   gap: 1.5rem;
   box-shadow: var(--shadow-lg);
+  transition: var(--transition-normal);
+}
+
+.download-release-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-glow);
+}
+
+.release-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: auto;
 }
 
 .release-info {
@@ -1387,12 +1401,6 @@ kbd {
 .release-date {
   font-size: 0.8rem;
   color: var(--text-dark);
-}
-
-.release-actions {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
 }
 
 /* Login Page Layout */
