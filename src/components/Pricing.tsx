@@ -15,6 +15,8 @@ export default function Pricing({ user, onSuccessPurchase }: PricingProps) {
   const [copied, setCopied] = useState(false);
   const [showRetrieveModal, setShowRetrieveModal] = useState(false);
   const [retrieveEmail, setRetrieveEmail] = useState('');
+  const [retrievePassword, setRetrievePassword] = useState('');
+  const [showRetrievePassword, setShowRetrievePassword] = useState(false);
   const [retrievedLicenses, setRetrievedLicenses] = useState<any[] | null>(null);
   const [isRetrieving, setIsRetrieving] = useState(false);
 
@@ -141,10 +143,20 @@ export default function Pricing({ user, onSuccessPurchase }: PricingProps) {
 
   const handleRetrieveLicenses = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!retrieveEmail.trim()) return;
+    if (!retrieveEmail.trim() || !retrievePassword.trim()) {
+      alert('Please enter both your registered email and password.');
+      return;
+    }
 
     setIsRetrieving(true);
     try {
+      // Authenticate with email/password first
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: retrieveEmail.trim(),
+        password: retrievePassword.trim()
+      });
+      if (authError) throw authError;
+
       const { data, error } = await supabase
         .from('licenses')
         .select('*')
@@ -154,7 +166,7 @@ export default function Pricing({ user, onSuccessPurchase }: PricingProps) {
       setRetrievedLicenses(data);
     } catch (err: any) {
       console.error('Error retrieving licenses:', err);
-      alert('Failed to retrieve licenses: ' + err.message);
+      alert('Authentication failed: ' + (err.message || 'Invalid email or password.'));
     } finally {
       setIsRetrieving(false);
     }
@@ -350,7 +362,7 @@ export default function Pricing({ user, onSuccessPurchase }: PricingProps) {
                           </div>
                           {(checkoutAuthError.toLowerCase().includes('invalid') || checkoutAuthError.toLowerCase().includes('not found')) && (
                             <div style={{ fontSize: '0.8rem', color: '#ef4444', opacity: 0.85, paddingLeft: '1.4rem' }}>
-                              💡 New user? Use Google below to register.
+                             New user? Use Google below to register.
                             </div>
                           )}
                         </div>
@@ -576,9 +588,8 @@ export default function Pricing({ user, onSuccessPurchase }: PricingProps) {
           </div>
         )}
 
-        {/* Retrieve License Modal */}
         {showRetrieveModal && (
-          <div className="checkout-modal-overlay" onClick={() => { setShowRetrieveModal(false); setRetrievedLicenses(null); setRetrieveEmail(''); }}>
+          <div className="checkout-modal-overlay" onClick={() => { setShowRetrieveModal(false); setRetrievedLicenses(null); setRetrieveEmail(''); setRetrievePassword(''); }}>
             <div className="checkout-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
               <button
                 className="close-modal-btn"
@@ -586,6 +597,7 @@ export default function Pricing({ user, onSuccessPurchase }: PricingProps) {
                   setShowRetrieveModal(false);
                   setRetrievedLicenses(null);
                   setRetrieveEmail('');
+                  setRetrievePassword('');
                 }}
               >
                 <X size={20} />
@@ -597,19 +609,50 @@ export default function Pricing({ user, onSuccessPurchase }: PricingProps) {
               </div>
 
               {retrievedLicenses === null ? (
-                <form className="checkout-form" onSubmit={handleRetrieveLicenses}>
-                  <div className="form-group">
-                    <label>Registered Email Address</label>
-                    <input
-                      type="email"
-                      required
-                      className="form-input"
-                      placeholder="Enter your email"
-                      value={retrieveEmail}
-                      onChange={(e) => setRetrieveEmail(e.target.value)}
-                    />
+                <form className="checkout-form" onSubmit={handleRetrieveLicenses} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-dark)' }}>Registered Email Address</label>
+                    <div className="input-with-icon-wrapper">
+                      <span className="input-icon">
+                        <Mail size={16} />
+                      </span>
+                      <input
+                        type="email"
+                        required
+                        className="form-input"
+                        placeholder="Enter your email"
+                        value={retrieveEmail}
+                        onChange={(e) => setRetrieveEmail(e.target.value)}
+                      />
+                    </div>
                   </div>
-                  <button type="submit" className="btn btn-primary mt-4 w-full" disabled={isRetrieving}>
+
+                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-dark)' }}>Account Password</label>
+                    <div className="input-with-icon-wrapper">
+                      <span className="input-icon">
+                        <Lock size={16} />
+                      </span>
+                      <input
+                        type={showRetrievePassword ? 'text' : 'password'}
+                        required
+                        className="form-input"
+                        placeholder="Enter password"
+                        value={retrievePassword}
+                        onChange={(e) => setRetrievePassword(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        className="password-toggle-btn"
+                        onClick={() => setShowRetrievePassword(!showRetrievePassword)}
+                        tabIndex={-1}
+                      >
+                        {showRetrievePassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button type="submit" className="btn btn-primary w-full" style={{ padding: '0.8rem', fontWeight: 600, display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '0.5rem' }} disabled={isRetrieving}>
                     {isRetrieving ? 'Searching Database...' : 'Find My License'}
                   </button>
                 </form>
