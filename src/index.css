@@ -389,7 +389,7 @@ kbd {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 2rem;
+  gap: 1.25rem;
   list-style: none;
 }
 
@@ -418,12 +418,12 @@ kbd {
   display: none;
   background: none;
   border: none;
-  color: #ffffff;
+  color: var(--text-heading);
   font-size: 1.5rem;
   cursor: pointer;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .menu-toggle {
     display: block;
   }

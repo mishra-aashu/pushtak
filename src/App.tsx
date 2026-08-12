@@ -34,6 +34,10 @@ export default function App() {
       setUser(activeUser);
       if (activeUser) {
         setIsLoggedIn(true);
+        // Only redirect to portal if not in middle of a checkout flow
+        if (!localStorage.getItem('pustak_checkout_plan')) {
+          setView('portal');
+        }
       }
     });
 
@@ -43,6 +47,10 @@ export default function App() {
       setUser(activeUser);
       if (activeUser) {
         setIsLoggedIn(true);
+        // Only redirect to portal if not in middle of a checkout flow
+        if (!localStorage.getItem('pustak_checkout_plan')) {
+          setView('portal');
+        }
       } else if (!activeUser && isLoggedIn && event === 'SIGNED_OUT') {
         setIsLoggedIn(false);
         setView('home');
