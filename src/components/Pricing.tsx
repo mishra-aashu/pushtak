@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Check, X, Sparkles, Copy, CheckCircle2, Eye, EyeOff, Lock, Mail, ShieldAlert } from 'lucide-react';
+import { Check, X, Sparkles, Copy, CheckCircle2, Eye, EyeOff, Lock, Mail, ShieldAlert, ShieldCheck, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+
+const loadScript = (src: string) => {
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 
 interface PricingProps {
   user: any;
@@ -19,6 +29,10 @@ export default function Pricing({ user, onSuccessPurchase }: PricingProps) {
   const [showRetrievePassword, setShowRetrievePassword] = useState(false);
   const [retrievedLicenses, setRetrievedLicenses] = useState<any[] | null>(null);
   const [isRetrieving, setIsRetrieving] = useState(false);
+  
+  // Razorpay payment integration states
+  const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
 
   // Checkout Email Auth states
   const [checkoutEmail, setCheckoutEmail] = useState('');
@@ -99,46 +113,127 @@ export default function Pricing({ user, onSuccessPurchase }: PricingProps) {
   };
 
   const handlePaymentComplete = async () => {
-    // Generate a beautiful mock license key
-    const uniquePart = Math.random().toString(36).substring(2, 6).toUpperCase() + '-' +
-      Math.random().toString(36).substring(2, 6).toUpperCase();
-    const prefix = checkoutPlan === 'cloud' ? 'POS-CLOUD' :
-      checkoutPlan === 'lifetime' ? 'POS-LIFETIME' : 'POS-TRIAL';
-    const finalKey = `${prefix}-${uniquePart}`;
-
-    let validityVal = 'lifetime';
-    let expiresAtStr: string | null = null;
     if (checkoutPlan === 'trial') {
-      validityVal = 'trial';
-      expiresAtStr = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-    } else if (checkoutPlan === 'cloud') {
-      validityVal = 'cloud';
-    }
+      setIsPaymentLoading(true);
+      setPaymentError('');
+      // Standard trial activation
+      const uniquePart = Math.random().toString(36).substring(2, 6).toUpperCase() + '-' +
+        Math.random().toString(36).substring(2, 6).toUpperCase();
+      const finalKey = `POS-TRIAL-${uniquePart}`;
+      const expiresAtStr = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    try {
-      const { error } = await supabase.from('licenses').insert({
-        license_key: finalKey,
-        user_email: formData.email.trim(),
-        validity: validityVal,
-        hwid: null,
-        expires_at: expiresAtStr,
-        is_active: true
-      });
+      try {
+        const { error } = await supabase.from('licenses').insert({
+          license_key: finalKey,
+          user_email: formData.email.trim(),
+          validity: 'trial',
+          hwid: null,
+          expires_at: expiresAtStr,
+          is_active: true
+        });
 
-      if (error) {
-        console.error('Supabase license insertion failed:', error.message);
-        alert('Failed to register license key on server: ' + error.message);
-        return;
+        if (error) throw error;
+
+        setGeneratedKey(finalKey);
+        setPurchaseStep('success');
+        onSuccessPurchase(finalKey, formData.libraryName);
+      } catch (err: any) {
+        console.error('Trial key insertion failed:', err);
+        setPaymentError(err.message || 'Failed to setup trial license key.');
+      } finally {
+        setIsPaymentLoading(false);
       }
-    } catch (err: any) {
-      console.error('Failed to connect to licensing database:', err);
-      alert('Network error connecting to licensing server. Please check your connection.');
       return;
     }
 
-    setGeneratedKey(finalKey);
-    setPurchaseStep('success');
-    onSuccessPurchase(finalKey, formData.libraryName);
+    // For paid plans ('lifetime' | 'cloud')
+    setIsPaymentLoading(true);
+    setPaymentError('');
+    try {
+      // 1. Create Order on Server
+      const { data: createData, error: createError } = await supabase.functions.invoke('verify-razorpay-payment', {
+        body: {
+          action: 'create_order',
+          plan: checkoutPlan,
+          email: formData.email.trim()
+        }
+      });
+
+      if (createError || !createData || !createData.success) {
+        throw new Error(createError?.message || createData?.error || 'Failed to initialize payment.');
+      }
+
+      const rzpOrder = createData.order;
+      const keyId = createData.keyId;
+
+      // 2. Load SDK Script
+      const isScriptLoaded = await loadScript('https://checkout.razorpay.com/v1/checkout.js');
+      if (!isScriptLoaded) {
+        throw new Error('Failed to load Razorpay SDK. Please check your internet connection.');
+      }
+
+      // 3. Open Razorpay Checkout Modal
+      const options = {
+        key: keyId,
+        amount: rzpOrder.amount,
+        currency: rzpOrder.currency,
+        order_id: rzpOrder.id,
+        name: 'Pustak OS',
+        description: `${checkoutPlan === 'cloud' ? 'Cloud & WhatsApp' : 'Lifetime Pro'} Activation for ${formData.libraryName}`,
+        image: 'https://img.icons8.com/color/120/library.png',
+        handler: async function (response: any) {
+          setIsPaymentLoading(true);
+          setPaymentError('');
+          try {
+            // 4. Verify Payment on Server
+            const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-razorpay-payment', {
+              body: {
+                action: 'verify_payment',
+                paymentId: response.razorpay_payment_id,
+                orderId: response.razorpay_order_id,
+                signature: response.razorpay_signature,
+                plan: checkoutPlan,
+                email: formData.email.trim()
+              }
+            });
+
+            if (verifyError || !verifyData || !verifyData.verified) {
+              throw new Error(verifyError?.message || verifyData?.error || 'Payment verification failed.');
+            }
+
+            // Success!
+            setGeneratedKey(verifyData.license_key);
+            setPurchaseStep('success');
+            onSuccessPurchase(verifyData.license_key, formData.libraryName);
+          } catch (err: any) {
+            console.error('Verification error:', err);
+            setPaymentError(err.message || 'Failed to verify secure payment transaction.');
+          } finally {
+            setIsPaymentLoading(false);
+          }
+        },
+        prefill: {
+          name: formData.name,
+          email: formData.email,
+        },
+        theme: {
+          color: '#7c3aed' // Elegant violet matching featured cards
+        },
+        modal: {
+          ondismiss: function () {
+            setIsPaymentLoading(false);
+            setPaymentError('Payment was cancelled by the user.');
+          }
+        }
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+    } catch (err: any) {
+      console.error('Payment error:', err);
+      setPaymentError(err.message || 'Payment initialization failed.');
+      setIsPaymentLoading(false);
+    }
   };
 
   const handleRetrieveLicenses = async (e: React.FormEvent) => {
@@ -512,39 +607,86 @@ export default function Pricing({ user, onSuccessPurchase }: PricingProps) {
               {purchaseStep === 'payment' && (
                 <div>
                   <div className="checkout-header">
-                    <h3>Simulated Gateway</h3>
-                    <p>
+                    <h3>Secure Gateway Checkout</h3>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                       {checkoutPlan === 'lifetime'
-                        ? 'Simulating secure payment of ₹5,999'
+                        ? 'Activate Lifetime Pro Plan License'
                         : checkoutPlan === 'cloud'
-                          ? 'Simulating secure payment of ₹12,500'
-                          : 'Simulating instant evaluation setup'}
+                          ? 'Activate Cloud & WhatsApp Plan License'
+                          : 'Activate Starter Demo Evaluation'}
                     </p>
                   </div>
 
-                  <div className="glass-card text-center" style={{ margin: '1.5rem 0', background: 'rgba(255,255,255,0.01)' }}>
+                  {paymentError && (
+                    <div style={{
+                      padding: '0.75rem 1rem',
+                      borderRadius: 'var(--border-radius-sm)',
+                      background: 'rgba(239, 68, 68, 0.06)',
+                      border: '1px solid rgba(239, 68, 68, 0.15)',
+                      color: '#ef4444',
+                      fontSize: '0.85rem',
+                      marginBottom: '1.25rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      fontWeight: 500
+                    }}>
+                      <ShieldAlert size={16} style={{ flexShrink: 0 }} />
+                      <span>{paymentError}</span>
+                    </div>
+                  )}
+
+                  <div className="glass-card text-center" style={{ margin: '1.5rem 0', background: 'rgba(255,255,255,0.01)', padding: '2rem 1.5rem', border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius-sm)' }}>
                     {checkoutPlan !== 'trial' ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ padding: '1rem', background: '#ffffff', borderRadius: '8px', display: 'inline-block' }}>
-                          {/* Simulated QR Code placeholder */}
-                          <div style={{ width: '120px', height: '120px', background: 'linear-gradient(45deg, #000 25%, transparent 25%), linear-gradient(-45deg, #000 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #000 75%), linear-gradient(-45deg, transparent 75%, #000 75%)', backgroundSize: '20px 20px', opacity: 0.8 }}></div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem' }}>
+                        <div style={{
+                          width: '64px',
+                          height: '64px',
+                          borderRadius: '16px',
+                          background: 'rgba(139, 92, 246, 0.08)',
+                          border: '1px solid rgba(139, 92, 246, 0.15)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#a78bfa'
+                        }}>
+                          <ShieldCheck size={36} />
                         </div>
-                        <p style={{ fontSize: '0.8rem' }}>Scan simulated UPI QR code to finalize order</p>
+                        <div>
+                          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Total Amount Due</div>
+                          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--font-heading)' }}>
+                            ₹{checkoutPlan === 'lifetime' ? '5,999' : '12,500'}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'center', marginTop: '0.5rem', fontWeight: 600 }}>
+                            <Lock size={12} /> SECURE TRANSACTION VIA RAZORPAY
+                          </div>
+                        </div>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-dark)', maxWidth: '280px', lineHeight: '1.4' }}>
+                          Pay securely via UPI, Netbanking, Wallets, or Cards. Your license key will generate instantly upon verification.
+                        </p>
                       </div>
                     ) : (
-                      <div style={{ padding: '2rem 0' }}>
+                      <div style={{ padding: '1rem 0' }}>
                         <Sparkles size={40} className="gradient-text" style={{ margin: '0 auto 1rem', display: 'block' }} />
-                        <p>No card details or payment required for trial registration.</p>
+                        <p style={{ fontWeight: 500, color: '#fff' }}>Instant 7-Day Trial Setup</p>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-dark)', marginTop: '0.5rem' }}>No payment details required for trial registration.</p>
                       </div>
                     )}
                   </div>
 
                   <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button className="btn btn-secondary w-full" onClick={() => setPurchaseStep('form')}>
+                    <button className="btn btn-secondary w-full" onClick={() => { setPurchaseStep('form'); setPaymentError(''); }} disabled={isPaymentLoading}>
                       Back
                     </button>
-                    <button className="btn btn-primary w-full" onClick={handlePaymentComplete}>
-                      Complete Activation
+                    <button className="btn btn-primary w-full" onClick={handlePaymentComplete} disabled={isPaymentLoading} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                      {isPaymentLoading ? (
+                        <>
+                          <RefreshCw size={16} className="animate-spin" />
+                          <span>Processing...</span>
+                        </>
+                      ) : (
+                        <span>{checkoutPlan === 'trial' ? 'Get Trial Key' : 'Pay & Activate'}</span>
+                      )}
                     </button>
                   </div>
                 </div>
