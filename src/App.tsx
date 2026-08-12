@@ -7,7 +7,7 @@ import CommandPaletteDemo from './components/CommandPaletteDemo';
 import Pricing from './components/Pricing';
 import Portal from './components/Portal';
 import Footer from './components/Footer';
-import { X, LogIn, ShieldCheck, Chrome } from 'lucide-react';
+import { X, LogIn, Chrome } from 'lucide-react';
 import { supabase } from './lib/supabase';
 
 export default function App() {
@@ -64,36 +64,6 @@ export default function App() {
   // Registration / license key info
   const [licenseKey, setLicenseKey] = useState('');
   const [libraryName, setLibraryName] = useState('');
-
-  // Login form credentials
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handleLoginSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username.trim() || !password.trim()) {
-      alert('Please fill out all credentials.');
-      return;
-    }
-
-    // Allow default login as admin/admin OR the newly generated key
-    const isDefaultAdmin = username.toLowerCase() === 'admin' && password.toLowerCase() === 'admin';
-    const isGeneratedLicense = username.toLowerCase() === 'admin' && licenseKey && password === licenseKey;
-
-    if (isDefaultAdmin || isGeneratedLicense) {
-      if (isDefaultAdmin && !libraryName) {
-        setLibraryName('Apex Reading Hall (Demo)');
-        setLicenseKey('POS-LIFETIME-DEMO-99FF');
-      }
-      setIsLoggedIn(true);
-      setShowLoginModal(false);
-      setView('portal');
-      setUsername('');
-      setPassword('');
-    } else {
-      alert('Invalid login credentials. Hint: Use username "admin" and password "admin", or buy a lifetime license to generate a custom key!');
-    }
-  };
 
   const handleGoogleLogin = async () => {
     try {
@@ -225,53 +195,7 @@ export default function App() {
                 </svg>
                 <span>Continue with Google</span>
               </button>
-              
-              <div style={{ display: 'flex', alignItems: 'center', textTransform: 'uppercase', fontSize: '0.7rem', color: 'var(--text-dark)', gap: '0.75rem', margin: '1.25rem 0 0.5rem' }}>
-                <span style={{ flexGrow: 1, height: '1px', background: 'var(--border-color)' }}></span>
-                <span>or developer bypass</span>
-                <span style={{ flexGrow: 1, height: '1px', background: 'var(--border-color)' }}></span>
-              </div>
             </div>
-
-            <form className="checkout-form" onSubmit={handleLoginSubmit}>
-              <div className="form-group">
-                <label>Admin Username</label>
-                <input 
-                  type="text" 
-                  required 
-                  className="form-input" 
-                  placeholder="admin"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label>Password (Activation / License Key)</label>
-                <input 
-                  type="password" 
-                  required 
-                  className="form-input" 
-                  placeholder="admin or your license key"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-
-              {licenseKey && (
-                <div style={{ fontSize: '0.8rem', background: 'rgba(16,185,129,0.05)', padding: '0.75rem', borderRadius: '4px', border: '1px solid rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#34d399' }}>
-                  <ShieldCheck size={14} />
-                  <span>Detected License Key: <strong>{licenseKey}</strong></span>
-                </div>
-              )}
-
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-dark)', marginTop: '0.25rem' }}>
-                💡 <strong>Hint:</strong> Use username <code style={{ padding: '2px 4px' }}>admin</code> and password <code style={{ padding: '2px 4px' }}>admin</code> to log in as a demo user.
-              </div>
-
-              <button type="submit" className="btn btn-primary mt-2 w-full">
-                Authenticate Admin
-              </button>
-            </form>
           </div>
         </div>
       )}
