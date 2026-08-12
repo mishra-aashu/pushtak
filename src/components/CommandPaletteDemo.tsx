@@ -100,22 +100,23 @@ export default function CommandPaletteDemo() {
           className="glass-card" 
           onClick={() => { setIsOpen(true); setSearch(''); setSelectedIndex(0); }}
           style={{
-            maxWidth: '650px',
+            maxWidth: '480px',
             margin: '0 auto',
-            padding: '2.5rem',
+            padding: '1.75rem 2rem',
             cursor: 'pointer',
             textAlign: 'center',
             border: '1px dashed var(--primary)',
+            borderRadius: 'var(--border-radius-lg)',
           }}
         >
-          <div className="success-icon-ring" style={{ width: '60px', height: '60px', color: 'var(--primary)', borderColor: 'var(--border-color)', background: 'var(--accent-light)', marginBottom: '1.25rem' }}>
-            <Command size={24} />
+          <div className="success-icon-ring" style={{ width: '48px', height: '48px', color: 'var(--primary)', borderColor: 'var(--border-color)', background: 'var(--accent-light)', marginBottom: '1rem' }}>
+            <Command size={20} />
           </div>
-          <h3 style={{ marginBottom: '0.75rem' }}>Trigger Command Palette</h3>
-          <p style={{ marginBottom: '1.5rem', fontSize: '0.95rem' }}>
+          <h3 style={{ marginBottom: '0.5rem', fontSize: '1.2rem' }}>Trigger Command Palette</h3>
+          <p style={{ marginBottom: '1.25rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
             Press <kbd>Ctrl + K</kbd> (or <kbd>⌘ + K</kbd>) on your keyboard, or click this block to open the live search drawer.
           </p>
-          <button className="btn btn-primary" style={{ pointerEvents: 'none' }}>
+          <button className="btn btn-primary" style={{ pointerEvents: 'none', padding: '0.55rem 1.25rem', fontSize: '0.85rem' }}>
             Open Spotlight Search
           </button>
         </div>
